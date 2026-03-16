@@ -114,46 +114,43 @@ export default function PropertyGallery({ images, title }: PropertyGalleryProps)
 
       {isLightboxOpen ? (
         <div
-          className="fixed inset-0 z-50 grid place-items-center bg-black/80 p-4 md:p-8"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-4 md:p-8"
           onClick={() => setIsLightboxOpen(false)}
           role="dialog"
           aria-modal="true"
           aria-label={`Galeria de ${title}`}
         >
-          <div
-            className="relative w-full max-w-6xl"
-            onClick={(event) => event.stopPropagation()}
+          <button
+            type="button"
+            onClick={() => setIsLightboxOpen(false)}
+            className="fixed right-4 top-4 z-[60] inline-flex h-11 w-11 items-center justify-center rounded-full bg-black/60 text-lg font-semibold text-white hover:bg-black/80 md:right-6 md:top-6"
+            aria-label="Cerrar galeria"
           >
-            <button
-              type="button"
-              onClick={() => setIsLightboxOpen(false)}
-              className="absolute right-3 top-3 z-10 inline-flex h-10 w-10 items-center justify-center rounded-full bg-black/60 text-xl text-white hover:bg-black/80"
-              aria-label="Cerrar galeria"
-            >
-              ×
-            </button>
+            X
+          </button>
 
-            {totalImages > 1 ? (
-              <>
-                <button
-                  type="button"
-                  onClick={goToPreviousImage}
-                  className="absolute left-3 top-1/2 z-10 inline-flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-black/60 text-2xl text-white hover:bg-black/80"
-                  aria-label="Imagen anterior"
-                >
-                  ‹
-                </button>
-                <button
-                  type="button"
-                  onClick={goToNextImage}
-                  className="absolute right-3 top-1/2 z-10 inline-flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-black/60 text-2xl text-white hover:bg-black/80"
-                  aria-label="Imagen siguiente"
-                >
-                  ›
-                </button>
-              </>
-            ) : null}
+          {totalImages > 1 ? (
+            <>
+              <button
+                type="button"
+                onClick={goToPreviousImage}
+                className="fixed left-3 top-1/2 z-[60] inline-flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-black/60 text-2xl text-white hover:bg-black/80 md:left-6"
+                aria-label="Imagen anterior"
+              >
+                {"<"}
+              </button>
+              <button
+                type="button"
+                onClick={goToNextImage}
+                className="fixed right-3 top-1/2 z-[60] inline-flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-black/60 text-2xl text-white hover:bg-black/80 md:right-6"
+                aria-label="Imagen siguiente"
+              >
+                {">"}
+              </button>
+            </>
+          ) : null}
 
+          <div className="relative w-full max-w-6xl" onClick={(event) => event.stopPropagation()}>
             <img
               src={activeImage.url}
               alt={title}
