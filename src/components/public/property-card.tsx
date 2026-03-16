@@ -44,15 +44,17 @@ export default function PropertyCard({ property }: PropertyCardProps) {
   return (
     <Card className="group overflow-hidden shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg">
       <div className="relative">
-        {mainImage ? (
-          <img
-            src={mainImage}
-            alt={property.title}
-            className="h-56 w-full object-cover transition duration-300 group-hover:scale-[1.02]"
-          />
-        ) : (
-          <div className="grid h-56 place-items-center bg-zinc-100 text-zinc-500">Sin imagen</div>
-        )}
+        <Link href={`/propiedad/${property.id}`} aria-label={`Ver detalle de ${property.title}`} className="block">
+          {mainImage ? (
+            <img
+              src={mainImage}
+              alt={property.title}
+              className="h-56 w-full object-cover transition duration-300 group-hover:scale-[1.02]"
+            />
+          ) : (
+            <div className="grid h-56 place-items-center bg-zinc-100 text-zinc-500">Sin imagen</div>
+          )}
+        </Link>
         {property.featured ? (
           <div className="absolute left-3 top-3">
             <StatusBadge tone="featured">Destacada</StatusBadge>
