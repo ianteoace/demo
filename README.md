@@ -1,36 +1,71 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Inmobiliaria SaaS
 
-## Getting Started
+Aplicacion inmobiliaria single-tenant con Next.js App Router, Prisma, NextAuth y Cloudinary.
 
-First, run the development server:
+## Desarrollo local
+
+1. Copia `.env.local.example` a `.env.local` y completa valores.
+2. Instala dependencias.
+3. Ejecuta migraciones.
+4. Opcional: carga datos demo.
+5. Levanta la app.
 
 ```bash
+npm install
+npx prisma migrate dev
+npm run seed
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Variables de entorno
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```env
+DATABASE_URL=postgresql://...                 # Neon/PostgreSQL
+NEXTAUTH_SECRET=<minimo-32-caracteres>       # secreto JWT
+NEXTAUTH_URL=https://tu-dominio.com
+APP_URL=https://tu-dominio.com               # base URL para metadata/enlaces absolutos
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+CLOUDINARY_CLOUD_NAME=...
+CLOUDINARY_API_KEY=...
+CLOUDINARY_API_SECRET=...
 
-## Learn More
+NEXT_PUBLIC_BUSINESS_EMAIL=contacto@inmobiliaria.com
+NEXT_PUBLIC_BUSINESS_PHONE=+54 9 351 555 0000
+NEXT_PUBLIC_WHATSAPP_NUMBER=5493515550000
+```
 
-To learn more about Next.js, take a look at the following resources:
+## Deploy en Vercel
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+1. Conecta el repositorio en Vercel.
+2. Configura todas las variables de entorno (Production y Preview).
+3. Verifica que `DATABASE_URL` apunte a Neon productiva.
+4. Configura `APP_URL` y `NEXTAUTH_URL` con tu dominio real.
+5. Deploy.
+6. Ejecuta migraciones en produccion:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```bash
+npx prisma migrate deploy
+```
 
-## Deploy on Vercel
+7. Carga demo data desde dashboard o con:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```bash
+npm run seed
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Credenciales demo
+
+El seed demo deja un admin consistente:
+
+- Email: `admin@inmo.com`
+- Password: `123456`
+
+## Checklist pre-demo
+
+- Home publica (`/`) funciona.
+- Listado (`/propiedades`) funciona.
+- Detalle (`/propiedad/[id]`) funciona y carga imagenes.
+- Boton WhatsApp funciona.
+- Login admin (`/login`) funciona.
+- Dashboard (`/dashboard`) funciona.
+- Usuarios autorizados y activacion (`/dashboard/users`, `/activar-acceso`) funcionan.

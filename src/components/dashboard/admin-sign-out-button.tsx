@@ -1,0 +1,23 @@
+"use client"
+
+import { useTransition } from "react"
+import { signOut } from "next-auth/react"
+
+export default function AdminSignOutButton() {
+  const [isPending, startTransition] = useTransition()
+
+  return (
+    <button
+      type="button"
+      onClick={() =>
+        startTransition(async () => {
+          await signOut({ callbackUrl: "/" })
+        })
+      }
+      disabled={isPending}
+      className="inline-flex h-9 items-center justify-center rounded-full border border-zinc-300 px-3 text-sm font-semibold text-zinc-700 transition hover:border-zinc-400 hover:text-zinc-950 disabled:cursor-not-allowed disabled:opacity-60"
+    >
+      {isPending ? "Cerrando..." : "Cerrar sesion"}
+    </button>
+  )
+}

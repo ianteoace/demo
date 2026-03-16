@@ -1,0 +1,11 @@
+ALTER TABLE "Property"
+ADD COLUMN "rooms" INTEGER,
+ADD COLUMN "areaM2" INTEGER,
+ADD COLUMN "garage" BOOLEAN NOT NULL DEFAULT false;
+
+UPDATE "Property"
+SET "areaM2" = ROUND("area")::INTEGER
+WHERE "area" IS NOT NULL;
+
+ALTER TABLE "Property"
+DROP COLUMN "area";
