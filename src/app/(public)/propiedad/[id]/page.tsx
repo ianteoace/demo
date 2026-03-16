@@ -6,6 +6,7 @@ import { notFound, redirect } from "next/navigation"
 import EmptyState from "@/components/public/empty-state"
 import Breadcrumbs from "@/components/public/breadcrumbs"
 import PropertyFeatures from "@/components/public/property-features"
+import PropertyGallery from "@/components/public/property-gallery"
 import StatusBadge from "@/components/public/status-badge"
 import { Card, Container } from "@/components/ui"
 import { getAppUrl } from "@/lib/app-url"
@@ -139,9 +140,6 @@ export default async function PublicPropertyDetailPage({
   const phoneHref = getPhoneHref(contact.phone)
   const emailHref = contact.email ? getGmailComposeHref(contact.email) : null
 
-  const mainImage = property.images[0]?.url
-  const galleryImages = property.images.slice(1)
-
   const googleMapsHref = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(fullAddress)}`
   const geocodedCoordinates = await geocodeAddressWithOsm(fullAddress)
   const openStreetMapEmbedUrl = geocodedCoordinates
@@ -211,26 +209,11 @@ export default async function PublicPropertyDetailPage({
             </Card>
 
             <section className="mt-6">
-              {mainImage ? (
-                <div className="space-y-4">
-                  <img
-                    src={mainImage}
-                    alt={property.title}
-                    className="h-72 w-full rounded-2xl border border-zinc-200 object-cover sm:h-[420px]"
-                  />
-                  {galleryImages.length > 0 ? (
-                    <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
-                      {galleryImages.map((image) => (
-                        <img
-                          key={image.id}
-                          src={image.url}
-                          alt={property.title}
-                          className="h-28 w-full rounded-xl border border-zinc-200 object-cover sm:h-40"
-                        />
-                      ))}
-                    </div>
-                  ) : null}
-                </div>
+              {property.images.length > 0 ? (
+                <PropertyGallery
+                  images={property.images.map((image) => ({ id: image.id, url: image.url }))}
+                  title={property.title}
+                />
               ) : (
                 <EmptyState
                   title="Esta propiedad aún no tiene imágenes"
