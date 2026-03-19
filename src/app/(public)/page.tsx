@@ -1,234 +1,433 @@
-﻿import Link from "next/link"
+import type { Metadata } from "next"
+import Link from "next/link"
 
 import EmptyState from "@/components/public/empty-state"
-import PropertyCard from "@/components/public/property-card"
+import ProductCard from "@/components/public/product-card"
 import { Card, Container, PageHeader, Section } from "@/components/ui"
-import {
-  getBusinessContact,
-  getGmailComposeHref,
-  getPhoneHref,
-  getWhatsAppHref,
-} from "@/lib/business-contact"
+import { getBusinessContact, getPhoneHref, getWhatsAppHref } from "@/lib/business-contact"
 import { prisma } from "@/lib/prisma"
-import type { PropertyWithImages } from "@/types/property"
 
-const FEATURED_LIMIT = 6
+const HOME_OFFERS_LIMIT = 6
 
-async function getFeaturedProperties(): Promise<{
-  properties: PropertyWithImages[]
-  usedFallback: boolean
-}> {
-  const featured = await prisma.property.findMany({
+export const metadata: Metadata = {
+  title: "Distribuidora mayorista de aderezos",
+  description:
+    "Compra aderezos por volumen para tu negocio. Explora ofertas mayoristas, arma tu carrito y envia pedidos comerciales de forma simple.",
+  alternates: {
+    canonical: "/",
+  },
+  openGraph: {
+    title: "Distribuidora mayorista de aderezos",
+    description:
+      "Catalogo mayorista de aderezos con ofertas activas, compra minima combinable y gestion de pedidos por WhatsApp.",
+    url: "/",
+  },
+  twitter: {
+    title: "Distribuidora mayorista de aderezos",
+    description:
+      "Explora productos y ofertas mayoristas en SoloAderezos para reponer stock de forma agil.",
+  },
+}
+
+async function getHomeCatalogData() {
+  const featuredProducts = await prisma.product.findMany({
     where: {
-      published: true,
-      featured: true,
+      isActive: true,
+      isOnSale: true,
+      category: {
+        isActive: true,
+      },
     },
     include: {
+      category: {
+        select: {
+          name: true,
+          slug: true,
+        },
+      },
       images: {
-        orderBy: [{ isPrimary: "desc" }, { createdAt: "asc" }],
+        orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
         take: 1,
       },
     },
-    orderBy: { createdAt: "desc" },
-    take: FEATURED_LIMIT,
+    orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
+    take: HOME_OFFERS_LIMIT,
   })
 
-  if (featured.length > 0) {
-    return {
-      properties: featured,
-      usedFallback: false,
-    }
-  }
+  const offerProducts =
+    featuredProducts.length > 0
+      ? featuredProducts
+      : await prisma.product.findMany({
+          where: {
+            isActive: true,
+            category: {
+              isActive: true,
+            },
+          },
+          include: {
+            category: {
+              select: {
+                name: true,
+                slug: true,
+              },
+            },
+            images: {
+              orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+              take: 1,
+            },
+          },
+          orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
+          take: HOME_OFFERS_LIMIT,
+        })
 
-  const recent = await prisma.property.findMany({
-    where: { published: true },
-    include: {
-      images: {
-        orderBy: [{ isPrimary: "desc" }, { createdAt: "asc" }],
-        take: 1,
-      },
+  const categories = await prisma.category.findMany({
+    where: { isActive: true },
+    orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
+    select: {
+      id: true,
+      name: true,
+      slug: true,
+      description: true,
     },
-    orderBy: { createdAt: "desc" },
-    take: FEATURED_LIMIT,
   })
 
   return {
-    properties: recent,
-    usedFallback: true,
+    offerProducts,
+    categories,
+    usedFallback: featuredProducts.length === 0,
   }
 }
 
 export default async function Home() {
-  const { properties, usedFallback } = await getFeaturedProperties()
   const contact = getBusinessContact()
-  const whatsappHref = getWhatsAppHref(contact.whatsappNumber)
   const phoneHref = getPhoneHref(contact.phone)
-  const emailHref = contact.email ? getGmailComposeHref(contact.email) : null
+  const whatsappHref = getWhatsAppHref(
+    contact.whatsappNumber,
+    "Hola! Quiero info mayorista y productos en oferta de SoloAderezos.",
+  )
+
+  const { offerProducts, categories, usedFallback } = await getHomeCatalogData()
 
   return (
-    <main className="py-8 md:py-12">
+    <main className="py-6 md:py-8">
       <Container size="public">
-        <section className="relative overflow-hidden rounded-3xl border border-zinc-200 bg-[linear-gradient(125deg,#f6f7f8_0%,#edf0f4_45%,#ffffff_100%)] px-6 py-10 md:px-12 md:py-16 lg:px-16 xl:px-20">
-          <div className="absolute -right-12 -top-16 h-56 w-56 rounded-full bg-zinc-300/20 blur-3xl" />
-          <div className="absolute -bottom-20 left-16 h-56 w-56 rounded-full bg-emerald-300/20 blur-3xl" />
-          <div className="relative grid gap-10 lg:grid-cols-[1.35fr_0.65fr] lg:items-end">
-            <PageHeader
-              eyebrow="Mercado inmobiliario"
-              title="Propiedades para vivir, invertir y proyectar tu próxima etapa."
-              description="Seleccionamos oportunidades en venta y alquiler con acompañamiento comercial en cada decisión clave."
-              actions={
-                <>
-                  <Link
-                    href="/propiedades"
-                    className="inline-flex h-11 items-center justify-center rounded-full bg-zinc-900 px-6 text-sm font-semibold text-white transition hover:bg-zinc-700"
-                  >
-                    Ver propiedades
-                  </Link>
-                  {whatsappHref ? (
-                    <a
-                      href={whatsappHref}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="inline-flex h-11 items-center justify-center rounded-full border border-emerald-300 bg-emerald-50 px-6 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100"
+        <div className="mb-4 rounded-2xl border border-[var(--color-primary)]/40 bg-[rgba(225,6,0,0.12)] px-4 py-3 md:px-5">
+          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--color-primary)]">Regla mayorista</p>
+          <p className="mt-1 text-sm font-medium text-[var(--color-text)]">
+            Compra minima mayorista: <span className="font-semibold">50 unidades combinables</span>.
+          </p>
+        </div>
+
+        <section className="relative overflow-hidden rounded-3xl border border-[var(--color-border)] bg-[linear-gradient(125deg,#121318_0%,#171920_45%,#0f1014_100%)] px-6 py-7 md:px-10 md:py-9">
+          <div className="absolute -right-8 -top-10 h-44 w-44 rounded-full bg-[rgba(225,6,0,0.26)] blur-3xl" />
+          <div className="absolute -bottom-16 left-12 h-44 w-44 rounded-full bg-[rgba(255,255,255,0.08)] blur-3xl" />
+
+          <div className="relative grid gap-8 lg:grid-cols-[1.35fr_0.65fr]">
+            <div className="grid gap-4">
+              <PageHeader
+                eyebrow="Distribuidora mayorista"
+                title="Precio mayorista real en aderezos para tu negocio."
+                description="Compra por volumen con respuesta comercial rapida y reposicion constante."
+                className="[&_h1]:text-[var(--color-text)] [&_p]:text-[var(--color-muted)] [&_p.text-zinc-500]:text-[var(--color-primary)]"
+                actions={
+                  <>
+                    <Link
+                      href="/productos"
+                      className="inline-flex h-11 items-center justify-center rounded-full bg-[var(--color-primary)] px-6 text-sm font-semibold text-white transition hover:bg-[#b90500]"
                     >
-                      Contactar por WhatsApp
-                    </a>
-                  ) : null}
-                </>
-              }
-            />
-            <Card className="bg-white/80 p-5 backdrop-blur md:p-6">
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-zinc-500">
-                Atención comercial
+                      Ver precios y productos
+                    </Link>
+                    <Link
+                      href="/productos?onSale=1"
+                      className="inline-flex h-11 items-center justify-center rounded-full border border-[var(--color-border)] bg-[var(--color-surface)] px-6 text-sm font-semibold text-[var(--color-text)] transition hover:border-[#3a3d44] hover:text-white"
+                    >
+                      Ver ofertas
+                    </Link>
+                    {whatsappHref ? (
+                      <a
+                        href={whatsappHref}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex h-11 items-center justify-center rounded-full border border-[var(--color-border)] bg-[var(--color-surface)] px-6 text-sm font-semibold text-[var(--color-text)] transition hover:border-[#3a3d44] hover:text-white"
+                      >
+                        Cotizar por WhatsApp
+                      </a>
+                    ) : null}
+                  </>
+                }
+              />
+              <ul className="grid gap-1 text-sm font-medium text-[var(--color-muted)] md:grid-cols-3">
+                <li>Entrega rapida</li>
+                <li>Atencion por WhatsApp</li>
+                <li>Stock permanente</li>
+              </ul>
+            </div>
+
+            <Card className="self-start border-[var(--color-border)] bg-[rgba(21,22,26,0.88)] p-4 md:p-5">
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--color-primary)]">
+                Venta mayorista
               </p>
-              <p className="mt-2 text-sm leading-relaxed text-zinc-600">
-                Equipo especializado en compra, venta y alquiler residencial con seguimiento
-                comercial personalizado.
-              </p>
-              <p className="mt-4 text-2xl font-semibold tracking-tight text-zinc-950">+200</p>
-              <p className="text-sm text-zinc-500">consultas calificadas gestionadas</p>
+              <ul className="mt-2 grid gap-1.5 text-sm text-[var(--color-muted)]">
+                <li>Pedido simple para reposicion semanal.</li>
+                <li>Linea Natura y aderezos de alta rotacion.</li>
+                <li>Soporte comercial directo para volumen.</li>
+              </ul>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {phoneHref && contact.phone ? (
+                  <a
+                    href={phoneHref}
+                    className="inline-flex h-8 items-center justify-center rounded-full border border-[var(--color-border)] px-3 text-xs font-semibold text-[var(--color-text)] transition hover:border-[#3a3d44] hover:text-white"
+                  >
+                    {contact.phone}
+                  </a>
+                ) : null}
+                <Link
+                  href="/productos"
+                  className="inline-flex h-8 items-center justify-center rounded-full border border-[var(--color-border)] px-3 text-xs font-semibold text-[var(--color-text)] transition hover:border-[#3a3d44] hover:text-white"
+                >
+                  Ver ofertas activas
+                </Link>
+              </div>
             </Card>
           </div>
         </section>
 
         <Section
-          id="destacadas"
-          className="scroll-mt-24"
-          title="Propiedades destacadas"
+          id="ofertas"
+          className="mt-6 scroll-mt-24 rounded-3xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5 md:p-6 [&_h2]:text-[var(--color-text)] [&_p]:text-[var(--color-muted)]"
+          title="Ofertas mayoristas destacadas"
           description={
             usedFallback
-              ? "No hay destacadas activas. Te mostramos las publicaciones más recientes."
-              : "Una selección de oportunidades destacadas del portfolio actual."
+              ? "Se estan actualizando ofertas. Te mostramos productos activos para no frenar tus compras."
+              : "Aprovecha promociones vigentes y acelera tu reposicion comercial."
           }
           actions={
-            <Link
-              href="/propiedades"
-              className="inline-flex items-center rounded-full border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-700 transition hover:border-zinc-400 hover:text-zinc-950"
-            >
-              Ver todas
-            </Link>
+            <div className="flex flex-wrap items-center gap-2">
+              <Link
+                href="/productos?onSale=1"
+                className="inline-flex items-center rounded-full bg-[var(--color-primary)] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[var(--color-primary-hover)]"
+              >
+                Ver todas las ofertas
+              </Link>
+              <Link
+                href="/productos"
+                className="inline-flex items-center rounded-full border border-[var(--color-border)] px-4 py-2 text-sm font-medium text-[var(--color-text)] transition hover:border-[#3a3d44] hover:text-white"
+              >
+                Ver catalogo completo
+              </Link>
+            </div>
           }
         >
-          {properties.length === 0 ? (
+          {offerProducts.length === 0 ? (
             <EmptyState
-              title="Todavía no hay publicaciones visibles"
-              description="Cuando activemos nuevas publicaciones, las vas a ver aquí con precio, ubicación y características."
-              note="Mientras tanto, puedes explorar el listado completo y contactarnos por WhatsApp."
-              actionLabel="Explorar listado"
-              actionHref="/propiedades"
+              title="No hay productos visibles por ahora"
+              description="Estamos actualizando el catalogo. Vuelve en breve para ver nuevas ofertas."
+              note="Tambien puedes pedir asistencia comercial por WhatsApp."
+              actionLabel="Ir a productos"
+              actionHref="/productos"
             />
           ) : (
-            <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
-              {properties.map((property) => (
-                <PropertyCard key={property.id} property={property} />
+            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+              {offerProducts.map((product) => (
+                <ProductCard
+                  key={product.id}
+                  product={{
+                    id: product.id,
+                    slug: product.slug,
+                    name: product.name,
+                    brand: product.brand,
+                    presentation: product.presentation,
+                    unitPrice: product.unitPrice,
+                    isOnSale: product.isOnSale,
+                    category: { name: product.category.name },
+                    images: product.images,
+                  }}
+                  whatsappNumber={contact.whatsappNumber}
+                />
               ))}
             </div>
           )}
         </Section>
 
         <Section
-          id="servicios"
-          className="scroll-mt-24 rounded-3xl border border-zinc-200 bg-white p-6 md:p-8"
-          title="Soluciones para cada etapa"
-          description="Acompañamos operaciones residenciales y de inversión con procesos claros y eficientes."
+          id="categorias"
+          className="mt-6 scroll-mt-24 rounded-3xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5 md:p-6 [&_h2]:text-[var(--color-text)] [&_p]:text-[var(--color-muted)]"
+          title="Compra por categoria"
+          description="Acceso rapido para encontrar lineas de producto segun tu tipo de negocio."
           compact
         >
-          <div className="grid gap-4 md:grid-cols-3">
-            <Card className="bg-zinc-50 p-5">
-              <h3 className="text-lg font-semibold text-zinc-900">Compra</h3>
-              <p className="mt-2 text-sm leading-relaxed text-zinc-600">
-                Encontramos opciones alineadas a tu perfil y negociamos con foco en seguridad y
-                valor.
-              </p>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {categories.map((category) => (
+              <Link
+                key={category.id}
+                href={`/productos?category=${category.slug}`}
+                className="group rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-soft)] p-4 transition hover:border-[#3a3d44] hover:bg-[#20232a]"
+              >
+                <p className="text-sm font-semibold text-[var(--color-text)] group-hover:text-white">
+                  {category.name}
+                </p>
+                <p className="mt-1 line-clamp-2 text-xs text-[var(--color-muted)]">
+                  {category.description || "Linea comercial disponible en catalogo mayorista."}
+                </p>
+              </Link>
+            ))}
+          </div>
+        </Section>
+
+        <Section
+          id="beneficios"
+          className="mt-6 scroll-mt-24 rounded-3xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5 text-[var(--color-text)] md:p-6 [&_h2]:text-[var(--color-text)] [&_p]:text-[var(--color-muted)]"
+          title="Beneficios para compra mayorista"
+          description="Condiciones comerciales pensadas para reposicion continua en negocios gastronomicos."
+          compact
+          actions={
+            <div className="flex flex-wrap items-center gap-2">
+              <Link
+                href="/productos"
+                className="inline-flex items-center rounded-full bg-[var(--color-primary)] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[var(--color-primary-hover)]"
+              >
+                Ir al catalogo
+              </Link>
+              <Link
+                href="/productos?onSale=1"
+                className="inline-flex items-center rounded-full border border-[var(--color-border)] px-4 py-2 text-sm font-medium text-[var(--color-text)] transition hover:border-[#3a3d44] hover:text-white"
+              >
+                Ver ofertas activas
+              </Link>
+            </div>
+          }
+        >
+          <div className="grid gap-3 md:grid-cols-4">
+            <Card className="border-[var(--color-border)] bg-[var(--color-surface-soft)] p-4">
+              <p className="text-sm font-semibold text-[var(--color-text)]">Compra mayorista combinable</p>
+              <p className="mt-1 text-xs text-[var(--color-muted)]">Llega al minimo de 50 unidades mezclando productos.</p>
             </Card>
-            <Card className="bg-zinc-50 p-5">
-              <h3 className="text-lg font-semibold text-zinc-900">Venta</h3>
-              <p className="mt-2 text-sm leading-relaxed text-zinc-600">
-                Posicionamos tu propiedad con estrategia comercial, imagen profesional y seguimiento
-                de interesados.
-              </p>
+            <Card className="border-[var(--color-border)] bg-[var(--color-surface-soft)] p-4">
+              <p className="text-sm font-semibold text-[var(--color-text)]">Atencion rapida por WhatsApp</p>
+              <p className="mt-1 text-xs text-[var(--color-muted)]">Respuesta comercial directa para cotizar y coordinar.</p>
             </Card>
-            <Card className="bg-zinc-50 p-5">
-              <h3 className="text-lg font-semibold text-zinc-900">Alquiler</h3>
-              <p className="mt-2 text-sm leading-relaxed text-zinc-600">
-                Gestionamos publicaciones, consultas y selección de inquilinos para reducir vacancia
-                y riesgos.
-              </p>
+            <Card className="border-[var(--color-border)] bg-[var(--color-surface-soft)] p-4">
+              <p className="text-sm font-semibold text-[var(--color-text)]">Reposicion para negocios</p>
+              <p className="mt-1 text-xs text-[var(--color-muted)]">Flujo agil para mantener stock en rotacion semanal.</p>
+            </Card>
+            <Card className="border-[var(--color-border)] bg-[var(--color-surface-soft)] p-4">
+              <p className="text-sm font-semibold text-[var(--color-text)]">Ofertas comerciales activas</p>
+              <p className="mt-1 text-xs text-[var(--color-muted)]">Promociones visibles para optimizar cada pedido.</p>
             </Card>
           </div>
         </Section>
 
         <Section
-          id="contacto"
-          className="scroll-mt-24 rounded-3xl border border-zinc-200 bg-zinc-950 p-6 text-zinc-50 md:p-8"
-          title="Publica tu propiedad con foco comercial"
-          description="Un proceso simple para salir al mercado con material profesional y trazabilidad de contactos."
+          id="como-comprar"
+          className="mt-6 scroll-mt-24 rounded-3xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5 md:p-6 [&_h2]:text-[var(--color-text)] [&_p]:text-[var(--color-muted)]"
+          title="Como comprar en SoloAderezos"
+          description="Un proceso simple para que tu pedido mayorista quede confirmado en minutos."
           compact
-          actions={
-            <Link
-              href="/propiedades"
-              className="inline-flex h-11 items-center justify-center rounded-full bg-white px-5 text-sm font-semibold text-zinc-900 transition hover:bg-zinc-200"
-            >
-              Explorar portfolio
-            </Link>
-          }
         >
-          <div className="mb-5 flex flex-wrap gap-2">
+          <div className="grid gap-3 md:grid-cols-4">
+            <Card className="border-[var(--color-border)] bg-[var(--color-surface-soft)] p-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--color-primary)]">Paso 1</p>
+              <p className="mt-2 text-sm font-semibold text-[var(--color-text)]">Elegir productos</p>
+              <p className="mt-1 text-xs text-[var(--color-muted)]">Explora categorias y precios del catalogo mayorista.</p>
+            </Card>
+            <Card className="border-[var(--color-border)] bg-[var(--color-surface-soft)] p-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--color-primary)]">Paso 2</p>
+              <p className="mt-2 text-sm font-semibold text-[var(--color-text)]">Armar carrito</p>
+              <p className="mt-1 text-xs text-[var(--color-muted)]">Combina items hasta alcanzar el minimo total de 50 unidades.</p>
+            </Card>
+            <Card className="border-[var(--color-border)] bg-[var(--color-surface-soft)] p-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--color-primary)]">Paso 3</p>
+              <p className="mt-2 text-sm font-semibold text-[var(--color-text)]">Enviar pedido</p>
+              <p className="mt-1 text-xs text-[var(--color-muted)]">Completa checkout y deja el pedido registrado.</p>
+            </Card>
+            <Card className="border-[var(--color-border)] bg-[var(--color-surface-soft)] p-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--color-primary)]">Paso 4</p>
+              <p className="mt-2 text-sm font-semibold text-[var(--color-text)]">Coordinar por WhatsApp</p>
+              <p className="mt-1 text-xs text-[var(--color-muted)]">Confirmamos detalles comerciales, entrega y seguimiento.</p>
+            </Card>
+          </div>
+
+          <div className="mt-4 flex flex-wrap gap-2">
+            <Link
+              href="/productos"
+              className="inline-flex h-10 items-center justify-center rounded-full bg-[var(--color-primary)] px-5 text-sm font-semibold text-white transition hover:bg-[var(--color-primary-hover)]"
+            >
+              Empezar compra
+            </Link>
             {whatsappHref ? (
               <a
                 href={whatsappHref}
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex h-10 items-center justify-center rounded-full border border-zinc-700 px-4 text-sm font-semibold text-zinc-100 transition hover:border-zinc-500"
+                className="inline-flex h-10 items-center justify-center rounded-full border border-[var(--color-success)] bg-[rgba(22,128,59,0.18)] px-5 text-sm font-semibold text-[var(--color-text)] transition hover:bg-[rgba(22,128,59,0.28)]"
               >
-                WhatsApp
-              </a>
-            ) : null}
-            {phoneHref && contact.phone ? (
-              <a
-                href={phoneHref}
-                className="inline-flex h-10 items-center justify-center rounded-full border border-zinc-700 px-4 text-sm font-semibold text-zinc-100 transition hover:border-zinc-500"
-              >
-                Celular: {contact.phone}
-              </a>
-            ) : null}
-            {emailHref && contact.email ? (
-              <a
-                href={emailHref}
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex h-10 items-center justify-center rounded-full border border-zinc-700 px-4 text-sm font-semibold text-zinc-100 transition hover:border-zinc-500"
-              >
-                Email: {contact.email}
+                Resolver dudas por WhatsApp
               </a>
             ) : null}
           </div>
-
-          <p className="max-w-3xl text-sm leading-relaxed text-zinc-300 md:text-base">
-            Coordinamos estrategia de precio, posicionamiento y gestión de consultas para que la
-            operación avance con información clara y decisiones más seguras.
-          </p>
         </Section>
+
+        <Section
+          id="contacto"
+          className="mt-6 scroll-mt-24 rounded-3xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5 md:p-6 [&_h2]:text-[var(--color-text)] [&_p]:text-[var(--color-muted)]"
+          title="Listo para comprar al por mayor?"
+          description="Escribenos por WhatsApp y te armamos una propuesta segun volumen y frecuencia."
+          compact
+          actions={
+            <>
+              {whatsappHref ? (
+                <a
+                  href={whatsappHref}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex h-11 items-center justify-center rounded-full bg-[var(--color-success)] px-6 text-sm font-semibold text-white transition hover:bg-[var(--color-success-hover)]"
+                >
+                  Contactar por WhatsApp
+                </a>
+              ) : null}
+              <Link
+                href="/productos"
+                className="inline-flex h-11 items-center justify-center rounded-full border border-[var(--color-border)] px-6 text-sm font-semibold text-[var(--color-text)] transition hover:border-[#3a3d44] hover:text-white"
+              >
+                Ver catalogo completo
+              </Link>
+            </>
+          }
+        />
+
+        <section className="mt-6 overflow-hidden rounded-3xl border border-[var(--color-border)] bg-[linear-gradient(130deg,#14161b_0%,#1a1d24_65%,#14161b_100%)] px-5 py-6 md:px-7 md:py-7">
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--color-primary)]">Cierre comercial</p>
+          <h2 className="mt-2 text-2xl font-semibold tracking-tight text-[var(--color-text)] md:text-3xl">
+            Reponer aderezos para tu negocio puede ser simple y rapido.
+          </h2>
+          <p className="mt-2 max-w-3xl text-sm text-[var(--color-muted)] md:text-base">
+            Explora el catalogo, arma tu pedido mayorista y coordinamos por WhatsApp para que tu reposicion no se frene.
+          </p>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <Link
+              href="/productos"
+              className="inline-flex h-11 items-center justify-center rounded-full bg-[var(--color-primary)] px-6 text-sm font-semibold text-white transition hover:bg-[var(--color-primary-hover)]"
+            >
+              Ver catalogo mayorista
+            </Link>
+            <Link
+              href="/productos?onSale=1"
+              className="inline-flex h-11 items-center justify-center rounded-full border border-[var(--color-border)] px-6 text-sm font-semibold text-[var(--color-text)] transition hover:border-[#3a3d44] hover:text-white"
+            >
+              Ver ofertas
+            </Link>
+            {whatsappHref ? (
+              <a
+                href={whatsappHref}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex h-11 items-center justify-center rounded-full border border-[var(--color-success)] bg-[rgba(22,128,59,0.18)] px-6 text-sm font-semibold text-[var(--color-text)] transition hover:bg-[rgba(22,128,59,0.28)]"
+              >
+                Pedir asesoria por WhatsApp
+              </a>
+            ) : null}
+          </div>
+        </section>
       </Container>
     </main>
   )

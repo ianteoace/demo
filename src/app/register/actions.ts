@@ -3,12 +3,16 @@
 import { Prisma, Role } from "@prisma/client"
 import bcrypt from "bcryptjs"
 
+import { assertBootstrapAccess } from "@/lib/bootstrap"
 import { prisma } from "@/lib/prisma"
 import type { RegisterActionState } from "./state"
 
 const MIN_PASSWORD_LENGTH = 8
 
-function getString(formData: FormData, key: "name" | "email" | "password") {
+function getString(
+  formData: FormData,
+  key: "name" | "email" | "password" | "bootstrapToken",
+) {
   const value = formData.get(key)
   return typeof value === "string" ? value.trim() : ""
 }
@@ -18,6 +22,15 @@ export async function registerAdminAction(
   formData: FormData,
 ): Promise<RegisterActionState> {
   try {
+    const bootstrapToken = getString(formData, "bootstrapToken")
+    const bootstrapAccess = assertBootstrapAccess(bootstrapToken)
+    if (!bootstrapAccess.ok) {
+      return {
+        error: bootstrapAccess.message,
+        success: false,
+      }
+    }
+
     const name = getString(formData, "name")
     const email = getString(formData, "email").toLowerCase()
     const password = getString(formData, "password")
@@ -78,6 +91,7 @@ export async function registerAdminAction(
         name,
         email,
         passwordHash,
+        mustSetPassword: false,
         role: Role.ADMIN,
       },
     })

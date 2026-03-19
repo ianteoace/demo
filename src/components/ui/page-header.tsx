@@ -21,10 +21,10 @@ export default function PageHeader({
     <header className={cn("flex flex-wrap items-end justify-between gap-4", className)}>
       <div className="max-w-3xl">
         {eyebrow ? (
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500 md:text-sm">{eyebrow}</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--color-muted)] md:text-sm">{eyebrow}</p>
         ) : null}
-        <h1 className="mt-2 text-3xl font-semibold tracking-tight text-zinc-950 md:text-4xl">{title}</h1>
-        {description ? <p className="mt-3 text-sm text-zinc-600 md:text-base">{description}</p> : null}
+        <h1 className="mt-2 text-3xl font-semibold tracking-tight text-[var(--color-text)] md:text-4xl">{title}</h1>
+        {description ? <p className="mt-3 text-sm text-[var(--color-muted)] md:text-base">{description}</p> : null}
       </div>
       {actions ? <div className="flex flex-wrap gap-3">{actions}</div> : null}
     </header>

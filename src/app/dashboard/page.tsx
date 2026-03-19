@@ -1,12 +1,11 @@
 import Link from "next/link"
 import { getServerSession } from "next-auth"
 import { redirect } from "next/navigation"
-import { Role } from "@prisma/client"
 
 import { authOptions } from "@/auth"
 import { Button, Card, Container, PageHeader, Section } from "@/components/ui"
+import { formatArsAmount } from "@/lib/currency"
 import { getDashboardOverviewMetrics } from "@/lib/dashboard/get-dashboard-overview-metrics"
-import LoadDemoDataButton from "./components/load-demo-data-button"
 
 function MetricCard({
   title,
@@ -19,9 +18,9 @@ function MetricCard({
 }) {
   return (
     <Card className="p-4 md:p-5">
-      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-zinc-500">{title}</p>
-      <p className="mt-2 text-2xl font-semibold tracking-tight text-zinc-950">{value}</p>
-      {subtitle ? <p className="mt-2 text-sm text-zinc-600">{subtitle}</p> : null}
+      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--color-muted)]">{title}</p>
+      <p className="mt-2 text-2xl font-semibold tracking-tight text-[var(--color-text)]">{value}</p>
+      {subtitle ? <p className="mt-2 text-sm text-[var(--color-muted)]">{subtitle}</p> : null}
     </Card>
   )
 }
@@ -40,94 +39,100 @@ export default async function Dashboard() {
       <Container size="wide">
         <PageHeader
           eyebrow="Panel administrativo"
-          title="Panel de administración"
-          description="Controla el estado comercial de tu inmobiliaria, revisa actividad reciente y accede rápido a las tareas operativas."
+          title="Panel de administracion"
+          description="Gestion del dominio nuevo de SoloAderezos: productos, consultas y pedidos mayoristas."
           actions={
             <>
-              <Link href="/dashboard/properties">
-                <Button>Gestionar propiedades</Button>
+              <Link href="/dashboard/products">
+                <Button>Gestionar productos</Button>
               </Link>
-              <Link href="/dashboard/leads">
-                <Button variant="secondary">Ver leads</Button>
+              <Link href="/dashboard/orders">
+                <Button variant="secondary">Ver pedidos</Button>
+              </Link>
+              <Link href="/dashboard/inquiries">
+                <Button variant="secondary">Ver consultas</Button>
               </Link>
             </>
           }
         />
 
         <Section compact>
-          <Card className="overflow-hidden border-zinc-900/10 bg-gradient-to-br from-white to-zinc-50 p-5 md:p-6">
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-zinc-500">Resumen general</p>
-            <h2 className="mt-3 text-xl font-semibold tracking-tight text-zinc-950 md:text-2xl">
+          <Card className="overflow-hidden bg-[var(--color-surface)] p-5 md:p-6">
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--color-muted)]">Resumen general</p>
+            <h2 className="mt-3 text-xl font-semibold tracking-tight text-[var(--color-text)] md:text-2xl">
               Bienvenido {session.user?.name || "equipo"}.
             </h2>
-            <p className="mt-2 max-w-3xl text-sm text-zinc-600 md:text-base">
-              Este panel centraliza tus propiedades, publicaciones destacadas y consultas recibidas para una gestión diaria más clara.
+            <p className="mt-2 max-w-3xl text-sm text-[var(--color-muted)] md:text-base">
+              El panel nuevo ya opera sobre Product, ProductImage e Inquiry.
+              El flujo comercial ahora incluye carrito y pedidos para seguimiento operativo.
             </p>
           </Card>
         </Section>
 
-        <Section compact title="Métricas clave" description="Indicadores operativos de tu cartera y embudo comercial.">
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-            <MetricCard title="Propiedades" value={metrics.totalProperties} />
-            <MetricCard title="Publicadas" value={metrics.publishedProperties} />
-            <MetricCard title="Destacadas" value={metrics.featuredProperties} />
+        <Section compact title="Metricas clave" description="Indicadores del dominio comercial actual.">
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <MetricCard title="Pedidos totales" value={metrics.totalOrders} subtitle="Pedidos registrados por checkout" />
+            <MetricCard title="Pedidos pendientes" value={metrics.pendingOrders} subtitle="Requieren seguimiento comercial" />
+            <MetricCard title="Productos activos" value={metrics.activeProducts} subtitle="Disponibles en el catalogo publico" />
             <MetricCard
-              title="Borradores"
-              value={metrics.draftProperties}
-              subtitle="Propiedades no publicadas"
+              title="Importe acumulado"
+              value={formatArsAmount(metrics.totalAmountSnapshot)}
+              subtitle="Suma estimada de pedidos registrados"
             />
-            <MetricCard title="Leads" value={metrics.totalLeads} />
-            <MetricCard title="Últimos 7 días" value={metrics.recentLeads} subtitle="Leads recientes" />
           </div>
         </Section>
 
-        <Section
-          compact
-          title="Actividad y acciones rápidas"
-          description="Tareas recomendadas para mantener actualizada la cartera y responder más rápido."
-        >
+        <Section compact title="Acciones rapidas" description="Operaciones principales del nuevo dominio.">
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             <Card className="p-5 md:p-6">
-              <h3 className="text-lg font-semibold text-zinc-900">Publicar nueva propiedad</h3>
-              <p className="mt-2 text-sm text-zinc-600">
-                Crea una nueva ficha para sumar inventario comercial y empezar a captar consultas.
+              <h3 className="text-lg font-semibold text-[var(--color-text)]">Crear producto</h3>
+              <p className="mt-2 text-sm text-[var(--color-muted)]">
+                Agrega un nuevo producto con categoria, estado y datos comerciales.
               </p>
-              <Link
-                href="/dashboard/properties/new"
-                className="mt-4 inline-flex h-10 items-center justify-center rounded-full bg-zinc-900 px-4 text-sm font-semibold text-white transition hover:bg-zinc-700"
-              >
-                Crear propiedad
-              </Link>
+              <div className="mt-4">
+                <Link href="/dashboard/products/new">
+                  <Button>Nuevo producto</Button>
+                </Link>
+              </div>
             </Card>
 
             <Card className="p-5 md:p-6">
-              <h3 className="text-lg font-semibold text-zinc-900">Revisar borradores</h3>
-              <p className="mt-2 text-sm text-zinc-600">
-                Tienes {metrics.draftProperties} {metrics.draftProperties === 1 ? "borrador pendiente" : "borradores pendientes"} para completar y publicar.
+              <h3 className="text-lg font-semibold text-[var(--color-text)]">Gestionar imagenes</h3>
+              <p className="mt-2 text-sm text-[var(--color-muted)]">
+                Carga y ordena imagenes de productos con integracion Cloudinary.
               </p>
-              <Link
-                href="/dashboard/properties?status=draft"
-                className="mt-4 inline-flex h-10 items-center justify-center rounded-full border border-zinc-300 px-4 text-sm font-semibold text-zinc-700 transition hover:border-zinc-400 hover:text-zinc-950"
-              >
-                Ver borradores
-              </Link>
+              <div className="mt-4">
+                <Link href="/dashboard/products">
+                  <Button variant="secondary">Ir a productos</Button>
+                </Link>
+              </div>
             </Card>
 
             <Card className="p-5 md:p-6">
-              <h3 className="text-lg font-semibold text-zinc-900">Leads recientes</h3>
-              <p className="mt-2 text-sm text-zinc-600">
-                En los últimos 7 días ingresaron {metrics.recentLeads} {metrics.recentLeads === 1 ? "lead" : "leads"} nuevos.
+              <h3 className="text-lg font-semibold text-[var(--color-text)]">Gestionar pedidos</h3>
+              <p className="mt-2 text-sm text-[var(--color-muted)]">
+                Revisa pedidos creados por checkout y actualiza su estado comercial.
               </p>
-              <Link
-                href="/dashboard/leads"
-                className="mt-4 inline-flex h-10 items-center justify-center rounded-full border border-zinc-300 px-4 text-sm font-semibold text-zinc-700 transition hover:border-zinc-400 hover:text-zinc-950"
-              >
-                Ver leads recientes
-              </Link>
+              <div className="mt-4">
+                <Link href="/dashboard/orders">
+                  <Button variant="secondary">Ver pedidos</Button>
+                </Link>
+              </div>
+            </Card>
+
+            <Card className="p-5 md:p-6">
+              <h3 className="text-lg font-semibold text-[var(--color-text)]">Seguimiento de consultas</h3>
+              <p className="mt-2 text-sm text-[var(--color-muted)]">
+                Actualiza estados de inquiry y prioriza oportunidades nuevas.
+              </p>
+              <div className="mt-4">
+                <Link href="/dashboard/inquiries">
+                  <Button variant="secondary">Ver consultas</Button>
+                </Link>
+              </div>
             </Card>
           </div>
 
-          {session.user?.role === Role.ADMIN ? <LoadDemoDataButton /> : null}
         </Section>
       </Container>
     </main>

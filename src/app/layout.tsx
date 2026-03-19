@@ -11,35 +11,48 @@ const metadataBase = new URL(siteUrl)
 
 export const metadata: Metadata = {
   metadataBase,
+  applicationName: "SoloAderezos",
   title: {
-    default: "Inmobiliaria | Propiedades en venta y alquiler",
-    template: "%s | Inmobiliaria",
+    default: "SoloAderezos",
+    template: "%s | SoloAderezos",
   },
   description:
-    "Portal inmobiliario para explorar propiedades en venta y alquiler, con fichas completas y contacto comercial directo.",
+    "Distribuidora mayorista de aderezos para gastronomia, comercios y revendedores. Catalogo por volumen, carrito de pedidos y atencion comercial por WhatsApp.",
+  keywords: [
+    "SoloAderezos",
+    "aderezos mayoristas",
+    "distribuidora de aderezos",
+    "catalogo mayorista",
+    "proveedor gastronomico",
+  ],
+  alternates: {
+    canonical: "/",
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
   openGraph: {
     type: "website",
     locale: "es_AR",
-    siteName: "Inmobiliaria",
-    title: "Inmobiliaria | Propiedades en venta y alquiler",
+    siteName: "SoloAderezos",
+    title: "SoloAderezos",
     description:
-      "Explora propiedades destacadas, filtra por ubicacion y contacta al equipo comercial desde un portal inmobiliario profesional.",
+      "Catalogo mayorista de aderezos para compra por volumen y gestion de pedidos comerciales.",
     url: "/",
     images: [
       {
-        url: "/next.svg",
-        width: 1200,
-        height: 630,
-        alt: "Inmobiliaria",
+        url: "/soloaderezos-logo.svg",
+        alt: "Logo SoloAderezos",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Inmobiliaria | Propiedades en venta y alquiler",
+    title: "SoloAderezos",
     description:
-      "Explora propiedades destacadas y contacta al equipo comercial desde el portal inmobiliario.",
-    images: ["/next.svg"],
+      "Distribuidora mayorista de aderezos con catalogo comercial y flujo simple de pedidos.",
+    images: ["/soloaderezos-logo.svg"],
   },
 }
 
@@ -55,7 +68,7 @@ export default async function RootLayout({
 
   return (
     <html lang="es">
-      <body className="bg-zinc-100 text-zinc-900 antialiased">
+      <body className="antialiased">
         <Providers session={session}>
           {children}
         </Providers>

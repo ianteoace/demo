@@ -18,10 +18,17 @@ export function getBusinessContact(): BusinessContact {
   }
 }
 
+function normalizeWhatsAppNumber(raw: string): string | null {
+  const digits = raw.replace(/\D+/g, "")
+  return digits.length > 0 ? digits : null
+}
+
 export function getWhatsAppHref(whatsappNumber: string | null, message?: string): string | null {
   if (!whatsappNumber) return null
-  if (!message) return `https://wa.me/${whatsappNumber}`
-  return `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`
+  const normalized = normalizeWhatsAppNumber(whatsappNumber)
+  if (!normalized) return null
+  if (!message) return `https://wa.me/${normalized}`
+  return `https://wa.me/${normalized}?text=${encodeURIComponent(message)}`
 }
 
 export function getPhoneHref(phone: string | null): string | null {

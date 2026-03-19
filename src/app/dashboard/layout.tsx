@@ -33,7 +33,9 @@ export default async function DashboardLayout({
   return (
     <>
       <AdminTopbar userLabel={userLabel} />
-      {children}
+      <div className="min-h-[calc(100vh-4rem)] bg-[var(--color-background)] text-[var(--color-text)]">
+        {children}
+      </div>
     </>
   )
 }

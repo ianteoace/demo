@@ -24,9 +24,9 @@ export default function Section({
         <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
           <div>
             {title ? (
-              <h2 className="text-2xl font-semibold tracking-tight text-zinc-950 md:text-3xl">{title}</h2>
+              <h2 className="text-2xl font-semibold tracking-tight text-[var(--color-text)] md:text-3xl">{title}</h2>
             ) : null}
-            {description ? <p className="mt-2 text-sm text-zinc-600 md:text-base">{description}</p> : null}
+            {description ? <p className="mt-2 text-sm text-[var(--color-muted)] md:text-base">{description}</p> : null}
           </div>
           {actions}
         </div>

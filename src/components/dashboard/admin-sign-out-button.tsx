@@ -15,7 +15,7 @@ export default function AdminSignOutButton() {
         })
       }
       disabled={isPending}
-      className="inline-flex h-9 items-center justify-center rounded-full border border-zinc-300 px-3 text-sm font-semibold text-zinc-700 transition hover:border-zinc-400 hover:text-zinc-950 disabled:cursor-not-allowed disabled:opacity-60"
+      className="inline-flex h-9 items-center justify-center rounded-full border border-[var(--color-border)] px-3 text-sm font-semibold text-[var(--color-text)] transition hover:border-[#3a3d44] hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
     >
       {isPending ? "Cerrando..." : "Cerrar sesion"}
     </button>

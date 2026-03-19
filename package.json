@@ -1,12 +1,18 @@
 {
-  "name": "inmobiliaria-saas",
+  "name": "soloaderezos-web",
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev --webpack",
     "build": "next build --webpack",
     "start": "next start",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate",
+    "seed": "prisma db seed",
+    "test": "npm run test:unit && npm run test:e2e",
+    "test:unit": "node scripts/test-unit.mjs",
+    "test:unit:watch": "node scripts/test-unit.mjs --watch",
+    "test:e2e": "node scripts/test-e2e.mjs",
+    "test:e2e:ui": "node scripts/test-e2e.mjs --ui --skip-prepare"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.1",
@@ -23,17 +29,20 @@
     "react-dom": "19.2.3"
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "^4",
+    "@playwright/test": "^1.56.1",
     "@types/bcryptjs": "^2.4.6",
     "@types/node": "^20",
     "@types/pg": "^8.18.0",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "autoprefixer": "^10.4.27",
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
+    "postcss": "^8.5.8",
     "prisma": "^7.4.2",
-    "tailwindcss": "^4",
+    "tailwindcss": "^3.4.17",
     "ts-node": "^10.9.2",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^3.2.4"
   }
 }

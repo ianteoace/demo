@@ -6,9 +6,13 @@ import { prisma } from "@/lib/prisma"
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const siteUrl = getAppUrl()
   const now = new Date()
-
-  const publishedProperties = await prisma.property.findMany({
-    where: { published: true },
+  const activeProducts = await prisma.product.findMany({
+    where: {
+      isActive: true,
+      category: {
+        isActive: true,
+      },
+    },
     select: {
       slug: true,
       updatedAt: true,
@@ -24,19 +28,19 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 1,
     },
     {
-      url: `${siteUrl}/propiedades`,
+      url: `${siteUrl}/productos`,
       lastModified: now,
       changeFrequency: "daily",
       priority: 0.9,
     },
   ]
 
-  const propertyRoutes: MetadataRoute.Sitemap = publishedProperties.map((property) => ({
-    url: `${siteUrl}/propiedad/${property.slug}`,
-    lastModified: property.updatedAt,
+  const productRoutes: MetadataRoute.Sitemap = activeProducts.map((product) => ({
+    url: `${siteUrl}/producto/${product.slug}`,
+    lastModified: product.updatedAt,
     changeFrequency: "weekly",
     priority: 0.8,
   }))
 
-  return [...staticRoutes, ...propertyRoutes]
+  return [...staticRoutes, ...productRoutes]
 }

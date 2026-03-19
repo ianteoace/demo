@@ -1,0 +1,12 @@
+-- AlterTable
+ALTER TABLE "Product"
+ADD COLUMN "unitPrice" INTEGER NOT NULL DEFAULT 0,
+ADD COLUMN "isOnSale" BOOLEAN NOT NULL DEFAULT false;
+
+-- AlterTable
+ALTER TABLE "Order"
+ADD COLUMN "totalAmountSnapshot" INTEGER NOT NULL DEFAULT 0;
+
+-- AlterTable
+ALTER TABLE "OrderItem"
+ADD COLUMN "unitPriceSnapshot" INTEGER NOT NULL DEFAULT 0;

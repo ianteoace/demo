@@ -4,9 +4,9 @@ type StatusBadgeProps = {
 }
 
 const toneClassMap: Record<NonNullable<StatusBadgeProps["tone"]>, string> = {
-  default: "bg-zinc-100 text-zinc-700 ring-zinc-200",
-  featured: "bg-amber-50 text-amber-800 ring-amber-200",
-  success: "bg-emerald-50 text-emerald-700 ring-emerald-200",
+  default: "bg-[var(--color-surface-soft)] text-[var(--color-muted)] ring-[var(--color-border)]",
+  featured: "bg-[rgba(225,6,0,0.2)] text-[var(--color-text)] ring-[rgba(225,6,0,0.35)]",
+  success: "bg-[rgba(22,128,59,0.22)] text-[var(--color-text)] ring-[rgba(22,128,59,0.4)]",
 }
 
 export default function StatusBadge({ children, tone = "default" }: StatusBadgeProps) {

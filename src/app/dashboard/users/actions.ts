@@ -2,20 +2,42 @@
 
 import { randomBytes } from "crypto"
 import { addDays } from "date-fns"
-import { Role } from "@prisma/client"
+import { Prisma, Role } from "@prisma/client"
+import bcrypt from "bcryptjs"
 import { revalidatePath } from "next/cache"
 
 import { getAuthSession } from "@/auth"
 import { getAppUrl } from "@/lib/app-url"
+import { logAppError, logBusinessEvent } from "@/lib/observability"
+import { getPrimaryAdminEmail } from "@/lib/primary-admin"
 import { prisma } from "@/lib/prisma"
 import { requireAdmin } from "@/lib/require-admin"
 import type { UserActionState } from "./state"
 
-const PROTECTED_ADMIN_EMAIL = "admin@inmo.com"
-
 function getString(formData: FormData, key: string) {
   const value = formData.get(key)
   return typeof value === "string" ? value.trim() : ""
+}
+
+function buildTemporaryPassword() {
+  const base = randomBytes(9).toString("base64url")
+  return `${base}A1!`
+}
+
+function successState(activationLink: string | null = null): UserActionState {
+  return {
+    error: null,
+    success: true,
+    activationLink,
+  }
+}
+
+function errorState(error: string): UserActionState {
+  return {
+    error,
+    success: false,
+    activationLink: null,
+  }
 }
 
 export async function createUserAction(
@@ -25,28 +47,19 @@ export async function createUserAction(
   try {
     const session = await getAuthSession()
     if (!session) {
-      return {
-        error: "No autorizado.",
-        success: false,
-      }
+      return errorState("No autorizado.")
     }
     await requireAdmin(session)
 
     const email = getString(formData, "email").toLowerCase()
 
     if (!email) {
-      return {
-        error: "Email es obligatorio.",
-        success: false,
-      }
+      return errorState("Email es obligatorio.")
     }
 
     const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
     if (!emailPattern.test(email)) {
-      return {
-        error: "El email no tiene un formato valido.",
-        success: false,
-      }
+      return errorState("El email no tiene un formato valido.")
     }
 
     const existingUser = await prisma.user.findUnique({
@@ -54,41 +67,47 @@ export async function createUserAction(
       select: { id: true },
     })
     if (existingUser) {
-      return {
-        error: "El email ya existe.",
-        success: false,
-      }
+      return errorState("El email ya existe.")
     }
 
     const token = randomBytes(32).toString("hex")
     const expiresAt = addDays(new Date(), 7)
+    const temporaryPassword = buildTemporaryPassword()
+    const passwordHash = await bcrypt.hash(temporaryPassword, 10)
 
     await prisma.user.create({
       data: {
         email,
-        passwordHash: null,
+        passwordHash,
+        role: Role.ADMIN,
         mustSetPassword: true,
         passwordSetupToken: token,
         passwordSetupExpiresAt: expiresAt,
       },
     })
 
-    const activationLink = `${getAppUrl()}/activar-acceso?token=${token}`
-    console.log(`Usuario creado: ${email}`)
-    console.log(`Link de activacion: ${activationLink}`)
+    logBusinessEvent("user.created", {
+      actorEmail: session.user.email,
+      createdUserEmail: email,
+      role: Role.ADMIN,
+      mustSetPassword: true,
+    })
+    console.info("[users] activation-link-created", { userEmail: email })
 
     revalidatePath("/dashboard/users")
 
-    return {
-      error: null,
-      success: true,
-    }
+    return successState()
   } catch (error) {
-    console.error("CREATE USER ACTION ERROR:", error)
-    return {
-      error: "No se pudo crear el usuario.",
-      success: false,
+    logAppError("users.create", error)
+
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === "P2002"
+    ) {
+      return errorState("El email ya existe.")
     }
+
+    return errorState("No se pudo crear el usuario. Revisa los logs del servidor para mas detalle.")
   }
 }
 
@@ -99,19 +118,13 @@ export async function regenerateActivationLinkAction(
   try {
     const session = await getAuthSession()
     if (!session) {
-      return {
-        error: "No autorizado.",
-        success: false,
-      }
+      return errorState("No autorizado.")
     }
     await requireAdmin(session)
 
     const userId = getString(formData, "userId")
     if (!userId) {
-      return {
-        error: "ID de usuario requerido.",
-        success: false,
-      }
+      return errorState("ID de usuario requerido.")
     }
 
     const user = await prisma.user.findUnique({
@@ -124,17 +137,11 @@ export async function regenerateActivationLinkAction(
     })
 
     if (!user) {
-      return {
-        error: "Usuario no encontrado.",
-        success: false,
-      }
+      return errorState("Usuario no encontrado.")
     }
 
     if (!user.mustSetPassword) {
-      return {
-        error: "El usuario ya activo su acceso.",
-        success: false,
-      }
+      return errorState("El usuario ya activo su acceso.")
     }
 
     const token = randomBytes(32).toString("hex")
@@ -148,21 +155,59 @@ export async function regenerateActivationLinkAction(
       },
     })
 
-    const activationLink = `${getAppUrl()}/activar-acceso?token=${token}`
-    console.log(`Link de activacion regenerado para ${user.email}: ${activationLink}`)
+    logBusinessEvent("user.activation_link.regenerated", {
+      actorEmail: session.user.email,
+      userEmail: user.email,
+    })
+    console.info("[users] activation-link-regenerated", { userEmail: user.email })
 
     revalidatePath("/dashboard/users")
 
-    return {
-      error: null,
-      success: true,
-    }
+    return successState()
   } catch (error) {
-    console.error("REGENERATE ACTIVATION LINK ACTION ERROR:", error)
-    return {
-      error: "No se pudo regenerar el enlace.",
-      success: false,
+    logAppError("users.regenerate_activation_link", error)
+    return errorState("No se pudo regenerar el enlace.")
+  }
+}
+
+export async function copyActivationLinkAction(
+  _prevState: UserActionState,
+  formData: FormData,
+): Promise<UserActionState> {
+  try {
+    const session = await getAuthSession()
+    if (!session) {
+      return errorState("No autorizado.")
     }
+    await requireAdmin(session)
+
+    const userId = getString(formData, "userId")
+    if (!userId) {
+      return errorState("ID de usuario requerido.")
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        mustSetPassword: true,
+        passwordSetupToken: true,
+      },
+    })
+
+    if (!user) {
+      return errorState("Usuario no encontrado.")
+    }
+
+    if (!user.mustSetPassword || !user.passwordSetupToken) {
+      return errorState("El usuario no tiene activacion pendiente.")
+    }
+
+    const activationLink = `${getAppUrl()}/activar-acceso?token=${user.passwordSetupToken}`
+    return successState(activationLink)
+  } catch (error) {
+    logAppError("users.copy_activation_link", error)
+    return errorState("No se pudo generar el enlace de activacion.")
   }
 }
 
@@ -173,20 +218,14 @@ export async function deleteUserAction(
   try {
     const session = await getAuthSession()
     if (!session) {
-      return {
-        error: "No autorizado.",
-        success: false,
-      }
+      return errorState("No autorizado.")
     }
     await requireAdmin(session)
 
     const userId = getString(formData, "userId")
 
     if (!userId) {
-      return {
-        error: "ID de usuario requerido.",
-        success: false,
-      }
+      return errorState("ID de usuario requerido.")
     }
 
     const user = await prisma.user.findUnique({
@@ -195,24 +234,19 @@ export async function deleteUserAction(
     })
 
     if (!user) {
-      return {
-        error: "Usuario no encontrado.",
-        success: false,
-      }
+      return errorState("Usuario no encontrado.")
     }
 
-    if (user.email.toLowerCase() === PROTECTED_ADMIN_EMAIL) {
-      return {
-        error: "No se puede eliminar el administrador principal del sistema.",
-        success: false,
-      }
+    const protectedAdminEmail = getPrimaryAdminEmail()
+    if (user.email.toLowerCase() === protectedAdminEmail) {
+      return errorState("No se puede eliminar el administrador principal del sistema.")
     }
 
-    if (session.user.id === user.id || user.email === session.user.email) {
-      return {
-        error: "No puedes eliminarte a ti mismo.",
-        success: false,
-      }
+    if (
+      session.user.id === user.id ||
+      user.email.toLowerCase() === (session.user.email || "").toLowerCase()
+    ) {
+      return errorState("No puedes eliminarte a ti mismo.")
     }
 
     if (user.role === Role.ADMIN) {
@@ -221,10 +255,7 @@ export async function deleteUserAction(
       })
 
       if (adminCount <= 1) {
-        return {
-          error: "No puedes eliminar al ultimo admin.",
-          success: false,
-        }
+        return errorState("No puedes eliminar al ultimo admin.")
       }
     }
 
@@ -232,17 +263,18 @@ export async function deleteUserAction(
       where: { id: userId },
     })
 
+    logBusinessEvent("user.deleted", {
+      actorEmail: session.user.email,
+      deletedUserId: user.id,
+      deletedUserEmail: user.email,
+    })
+
     revalidatePath("/dashboard/users")
 
-    return {
-      error: null,
-      success: true,
-    }
+    return successState()
   } catch (error) {
-    console.error("DELETE USER ACTION ERROR:", error)
-    return {
-      error: "No se pudo eliminar el usuario.",
-      success: false,
-    }
+    logAppError("users.delete", error)
+    return errorState("No se pudo eliminar el usuario.")
   }
 }
+

@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation"
 
 import { getAuthSession } from "@/auth"
-import { getAppUrl } from "@/lib/app-url"
+import { getPrimaryAdminEmail } from "@/lib/primary-admin"
 import { requireAdmin } from "@/lib/require-admin"
 import { prisma } from "@/lib/prisma"
 
@@ -18,12 +18,16 @@ export default async function UsersPage() {
       id: true,
       email: true,
       mustSetPassword: true,
-      passwordSetupToken: true,
       passwordSetupExpiresAt: true,
       createdAt: true,
     },
     orderBy: { createdAt: "desc" },
   })
 
-  return <UsersPageClient users={users} appUrl={getAppUrl()} />
+  return (
+    <UsersPageClient
+      users={users}
+      protectedAdminEmail={getPrimaryAdminEmail()}
+    />
+  )
 }

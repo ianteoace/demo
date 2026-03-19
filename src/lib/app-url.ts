@@ -10,6 +10,19 @@ function normalizeAbsoluteUrl(value: string): string {
 }
 
 export function getAppUrl() {
+  const isProduction = process.env.NODE_ENV === "production"
+
+  if (isProduction) {
+    const productionUrl = normalizeAbsoluteUrl(process.env.APP_URL || "")
+    if (!productionUrl) {
+      throw new Error(
+        "[app-url] Missing APP_URL. Production requires APP_URL as the canonical absolute URL.",
+      )
+    }
+
+    return productionUrl.replace(/\/+$/, "")
+  }
+
   const baseUrl = normalizeAbsoluteUrl(
     process.env.APP_URL ||
       process.env.NEXT_PUBLIC_APP_URL ||

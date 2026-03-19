@@ -1,40 +1,33 @@
 import { prisma } from "@/lib/prisma"
 
 export type DashboardOverviewMetrics = {
-  totalProperties: number
-  publishedProperties: number
-  featuredProperties: number
-  draftProperties: number
-  totalLeads: number
-  recentLeads: number
+  activeProducts: number
+  totalOrders: number
+  pendingOrders: number
+  totalAmountSnapshot: number
 }
 
 export async function getDashboardOverviewMetrics(): Promise<DashboardOverviewMetrics> {
-  const sevenDaysAgo = new Date()
-  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
-
   const [
-    totalProperties,
-    publishedProperties,
-    featuredProperties,
-    draftProperties,
-    totalLeads,
-    recentLeads,
+    activeProducts,
+    totalOrders,
+    pendingOrders,
+    ordersAmountAggregation,
   ] = await Promise.all([
-    prisma.property.count(),
-    prisma.property.count({ where: { published: true } }),
-    prisma.property.count({ where: { featured: true } }),
-    prisma.property.count({ where: { published: false } }),
-    prisma.lead.count(),
-    prisma.lead.count({ where: { createdAt: { gte: sevenDaysAgo } } }),
+    prisma.product.count({ where: { isActive: true } }),
+    prisma.order.count(),
+    prisma.order.count({ where: { status: "PENDING" } }),
+    prisma.order.aggregate({
+      _sum: {
+        totalAmountSnapshot: true,
+      },
+    }),
   ])
 
   return {
-    totalProperties,
-    publishedProperties,
-    featuredProperties,
-    draftProperties,
-    totalLeads,
-    recentLeads,
+    activeProducts,
+    totalOrders,
+    pendingOrders,
+    totalAmountSnapshot: ordersAmountAggregation._sum.totalAmountSnapshot ?? 0,
   }
 }

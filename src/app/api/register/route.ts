@@ -2,6 +2,7 @@ import { Prisma, Role } from "@prisma/client"
 import bcrypt from "bcryptjs"
 import { NextResponse } from "next/server"
 
+import { assertBootstrapAccess } from "@/lib/bootstrap"
 import { prisma } from "@/lib/prisma"
 
 type RegisterBody = {
@@ -9,6 +10,7 @@ type RegisterBody = {
   nombre?: string
   email?: string
   password?: string
+  bootstrapToken?: string
 }
 
 const MIN_PASSWORD_LENGTH = 8
@@ -58,6 +60,17 @@ function validateRegisterInput(body: RegisterBody) {
 export async function POST(req: Request) {
   try {
     const body = (await req.json()) as RegisterBody
+    const bootstrapTokenHeader = req.headers.get("x-bootstrap-token")
+    const bootstrapToken = body.bootstrapToken?.trim() || bootstrapTokenHeader
+    const bootstrapAccess = assertBootstrapAccess(bootstrapToken)
+
+    if (!bootstrapAccess.ok) {
+      return NextResponse.json(
+        { error: bootstrapAccess.message },
+        { status: 403 },
+      )
+    }
+
     const result = validateRegisterInput(body)
 
     if ("error" in result) {

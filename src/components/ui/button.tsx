@@ -8,10 +8,10 @@ type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
 }
 
 const variantStyles: Record<NonNullable<ButtonProps["variant"]>, string> = {
-  primary: "bg-zinc-900 text-white hover:bg-zinc-700",
-  secondary: "border border-zinc-300 bg-white text-zinc-700 hover:border-zinc-400 hover:text-zinc-950",
-  ghost: "text-zinc-700 hover:bg-zinc-100 hover:text-zinc-900",
-  success: "bg-emerald-600 text-white hover:bg-emerald-500",
+  primary: "bg-[var(--color-primary)] text-white hover:bg-[var(--color-primary-hover)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]",
+  secondary: "border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text)] hover:border-[#3a3d44] hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]",
+  ghost: "text-[var(--color-text)] hover:bg-[var(--color-surface)] hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)]",
+  success: "bg-[var(--color-success)] text-white hover:bg-[var(--color-success-hover)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-success)]",
 }
 
 export default function Button({
